@@ -12,6 +12,8 @@ with open('users.cache') as f:
 def get_spans():
     spans = defaultdict(list)
     for process in psutil.process_iter():
+        if process.cpu_percent() < 1.0:
+            continue
         spans[process.username()].extend(process.cpu_affinity())
     spans = [(k, list(set(v))) for (k,v) in spans.items()]
     return sorted(spans, key = lambda x: len(x[1]))[::-1]
