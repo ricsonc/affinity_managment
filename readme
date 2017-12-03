@@ -1,0 +1,4 @@
+1. run setup.py on the matrix root node
+2. when on a compute node, run affinity_span.py
+
+For each user, it finds all processes which are using more than 1% of total CPU time, then computes the union of their CPU affinities (the cores/threads on which they are allowed to run), and prints it out. I verified that by default, when you run something on a compute node, any processes launched will have their CPU affinity mask set by default to however many CPUs they asked for. 
