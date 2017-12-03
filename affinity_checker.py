@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import random
 import time
 import psutil
 import pwd
@@ -10,6 +11,8 @@ USERNAME = pwd.getpwuid(os.getuid()).pw_name
 CHECKER = 'CHECKER'
 NONCHECKER = 'NONCHECKER'
 OTHERUSER = 'OTHERUSER'
+
+EXEMPT = ['sshd']
 
 def print_process(process):
     print '===='
@@ -24,6 +27,9 @@ def get_type(process):
         return OTHERUSER
 
     cmd = process.cmdline()
+    if cmd and (('sshd' in cmd[0]) or ('/bin/bash' in cmd[0])):
+        return OTHERUSER #technically not, but we want to avoid
+
     if (len(cmd) == 2) and ('affinity_checker' in cmd[1]) and ('python' in cmd[0]):
         return CHECKER
     
@@ -64,9 +70,16 @@ def mainloop():
 
         setcount = 0
         for process in non_checkers:
-            if process.cpu_affinity() != affinity:
+            try:
+                cpu_affinity = process.cpu_affinity()
+            except psutil.NoSuchProcess:
+                print 'process does not exist'
+                continue
+
+            if not frozenset(cpu_affinity).issubset(frozenset(affinity)):
                 try:
                     process.cpu_affinity(affinity) #set
+                    #process.cpu_affinity([random.choice(affinity)])
                     setcount += 1                    
                 except psutil.AccessDenied:
                     print 'warning: access denied for one process'
